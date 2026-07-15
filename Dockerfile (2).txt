@@ -1,0 +1,53 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# 复制二进制
+COPY vertex-proxy ./vertex-proxy
+RUN chmod +x ./vertex-proxy
+
+# 在构建时直接创建 config 目录和文件（避免目录上传问题）
+RUN mkdir -p ./config
+
+RUN cat > ./config/config.json << 'CONF'
+{
+  "port_api": 7860,
+  "max_retries": 10,
+  "admin_password": "995575",
+  "proxy_url": ""
+}
+CONF
+
+RUN cat > ./config/api_keys.txt << 'KEYS'
+mykey:sk-995575
+KEYS
+
+RUN cat > ./config/models.json << 'MODELS'
+{
+  "models": [
+    "gemini-3.5-flash",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash-image",
+    "gemini-3-flash-preview",
+    "gemini-3.1-flash-lite",
+    "gemini-3.1-pro-preview",
+    "gemini-3.1-flash-image",
+    "gemini-3-pro-image",
+    "gemini-3.1-flash-tts-preview"
+  ],
+  "alias_map": {}
+}
+MODELS
+
+# 同意使用规则
+RUN echo "1f345592160d2f04" > ./config/agreed-rules-docker.txt
+
+EXPOSE 7860
+
+CMD sh -c 'echo yes | ./vertex-proxy'
